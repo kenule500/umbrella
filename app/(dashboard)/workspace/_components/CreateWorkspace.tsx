@@ -16,6 +16,7 @@ import { workspaceSchema, WorkspaceSchemaType } from '@/app/schemas/workspace';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { orpc } from '@/lib/orpc';
+import { isDefinedError } from '@orpc/client';
 
 
 type FormValues = z.infer<typeof workspaceSchema>;
@@ -42,12 +43,19 @@ function CreateWorkspace() {
           form.reset();
           setOpen(false);
         },
-        onError: () => {
+        onError: (error) => {
+          if (isDefinedError(error)) {
+            if (error.code === 'RATE_LIMITED') {
+              toast.error(error.message);
+              return;
+            }
+            toast.error(error.message);
+            return;
+          }
          toast.error("Failed to create workspace. Please try again.");
-        }
-      },
-      )
-    )
+        },
+      }
+    ))
 
     function onSubmit(data: WorkspaceSchemaType) {
       createWorkspaceMutation.mutate(data)
